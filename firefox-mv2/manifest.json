@@ -1,0 +1,22 @@
+{
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "58.0a1"
+    }
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "browser_action": {
+    "browser_style": true,
+    "default_title": "Styx",
+    "default_popup": "app.html"
+  },
+  "description": "A simple extension to synchronize tabs between devices.",
+  "homepage_url": "https://github.com/yznts/styx",
+  "manifest_version": 2,
+  "name": "Styx",
+  "permissions": ["tabs", "storage", "<all_urls>"],
+  "version": "1.0"
+}

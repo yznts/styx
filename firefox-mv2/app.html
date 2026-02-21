@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Styx</title>
+        <link rel="stylesheet" href="lib/basecoat.min.css" />
+        <script src="lib/basecoat.min.js" defer></script>
+        <script src="lib/tailwindcss.js" defer></script>
+    </head>
+    <body class="min-w-sm max-w-sm">
+        <div class="p-4 flex flex-col gap-4">
+            <div class="relative">
+                <input
+                    id="identifier-input"
+                    type="text"
+                    class="input pl-15"
+                    placeholder="1111-2222-3333-4444"
+                />
+                <div
+                    class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-sm"
+                >
+                    ID:
+                </div>
+            </div>
+            <div class="text-xs text-muted-foreground">
+                This is your unique identifier for synchronization across
+                devices. Provide same ID on other device to sync your data.
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label class="text-sm">Sync method</label>
+                <select id="sync-method" class="input">
+                    <option value="browserSync">browser.storage.sync</option>
+                    <option value="server">Own server</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-2" id="server-url-group">
+                <label class="text-sm">Server base URL</label>
+                <input
+                    id="server-url-input"
+                    type="text"
+                    class="input"
+                    placeholder="https://sync.example.com"
+                />
+            </div>
+
+            <label class="flex items-center gap-2" id="server-ws-toggle-group">
+                <input id="server-ws-enabled" type="checkbox" />
+                <span class="text-sm">Enable WebSocket realtime sync</span>
+            </label>
+
+            <button id="sync-now-button" class="btn btn-primary">Sync now</button>
+
+            <div>
+                <span>Last updated:</span>
+                <span id="last-updated">never</span>
+            </div>
+
+            <div class="text-xs text-muted-foreground" id="status-message"></div>
+        </div>
+        <script src="app.js"></script>
+    </body>
+</html>

@@ -1,0 +1,45 @@
+name: release-firefox-mv2
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    name: Build and upload Firefox MV2 extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Firefox extension
+        run: |
+          npx web-ext build \
+            --source-dir firefox-mv2 \
+            --artifacts-dir web-ext-artifacts \
+            --filename styx-firefox-mv2.zip
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: styx-firefox-mv2
+          path: web-ext-artifacts/styx-firefox-mv2.zip
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: web-ext-artifacts/styx-firefox-mv2.zip

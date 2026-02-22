@@ -31,11 +31,11 @@ app.use((request, response, next) => {
 
 // Normalizes incoming sync payload structure.
 function normalizePayload(input) {
-	const actions = Array.isArray(input?.actions) ? input.actions : [];
+	const tabs = Array.isArray(input?.tabs) ? input.tabs : [];
 	return {
 		version: Number(input?.version || 1),
 		updatedAt: Number(input?.updatedAt || Date.now()),
-		actions,
+		tabs,
 	};
 }
 
@@ -83,7 +83,7 @@ app.get("/sync/:id", (request, response) => {
 	const payload = store.get(identifier) || {
 		version: 1,
 		updatedAt: 0,
-		actions: [],
+		tabs: [],
 	};
 
 	response.status(200).json(payload);
@@ -99,7 +99,7 @@ app.post("/sync/:id", (request, response) => {
 	response.status(200).json({
 		ok: true,
 		identifier,
-		storedActions: payload.actions.length,
+		storedTabs: payload.tabs.length,
 		updatedAt: payload.updatedAt,
 	});
 });
@@ -157,7 +157,7 @@ websocketServer.on("connection", (socket) => {
 	const snapshot = store.get(identifier) || {
 		version: 1,
 		updatedAt: 0,
-		actions: [],
+		tabs: [],
 	};
 
 	socket.send(JSON.stringify({
@@ -177,7 +177,7 @@ websocketServer.on("connection", (socket) => {
 				const payload = store.get(identifier) || {
 					version: 1,
 					updatedAt: 0,
-					actions: [],
+					tabs: [],
 				};
 				socket.send(JSON.stringify({
 					type: "snapshot",

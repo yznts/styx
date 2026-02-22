@@ -1,7 +1,7 @@
 // Default server settings used for HTTP and optional WebSocket sync.
 const DEFAULT_SERVER_CONFIG = {
-	baseUrl: "http://127.0.0.1:8787",
-	useWebSocket: false,
+	baseUrl: "https://styx.yznts.cc",
+	useWebSocket: true,
 	timeoutMs: 10000,
 };
 
@@ -9,11 +9,12 @@ const DEFAULT_SERVER_CONFIG = {
 const LOCAL_STATE_KEY = "styx_local_state";
 const SYNC_KEY_PREFIX = "styx_sync_payload:";
 const SYNC_INTERVAL_MS = 5000;
+const RECENT_OPEN_TTL_MS = 15000;
 
 // Default user-editable extension settings.
 const DEFAULT_SETTINGS = {
 	identifier: "",
-	syncMethod: "browserSync",
+	syncMethod: "server",
 	serverBaseUrl: DEFAULT_SERVER_CONFIG.baseUrl,
 	serverUseWebSocket: DEFAULT_SERVER_CONFIG.useWebSocket,
 };
@@ -35,6 +36,8 @@ let websocketPublishTimer = null;
 let reconnectAttempt = 0;
 let websocketEndpoint = "";
 let hasInitialRemoteState = false;
+let remoteApplyQueue = Promise.resolve();
+const recentRemoteOpens = new Map();
 
 // Generates a UUID-like identifier for devices.
 function createId() {
@@ -140,6 +143,7 @@ async function applyRemoteState(payload) {
 	const currentTabs = await browser.tabs.query({});
 	const existingUrls = new Set();
 	const currentSyncedTabs = [];
+	const timestamp = now();
 
 	for (const tab of currentTabs) {
 		if (!shouldSyncUrl(tab.url)) {
@@ -147,6 +151,14 @@ async function applyRemoteState(payload) {
 		}
 		existingUrls.add(tab.url);
 		currentSyncedTabs.push(tab);
+	}
+
+	for (const [url, expiry] of recentRemoteOpens.entries()) {
+		if (expiry <= timestamp) {
+			recentRemoteOpens.delete(url);
+			continue;
+		}
+		existingUrls.add(url);
 	}
 
 	const orderedTabs = normalized.tabs.slice().sort((left, right) => {
@@ -176,6 +188,7 @@ async function applyRemoteState(payload) {
 				continue;
 			}
 
+			recentRemoteOpens.set(tab.url, now() + RECENT_OPEN_TTL_MS);
 			await browser.tabs.create({
 				url: tab.url,
 				active: false,
@@ -186,6 +199,17 @@ async function applyRemoteState(payload) {
 	} finally {
 		applyingRemote = false;
 	}
+}
+
+// Serializes remote apply operations to avoid duplicate tab opens from concurrent sync sources.
+function enqueueRemoteApply(payload) {
+	remoteApplyQueue = remoteApplyQueue
+		.catch(() => {
+			// Keep queue alive after previous failures.
+		})
+		.then(() => applyRemoteState(payload));
+
+	return remoteApplyQueue;
 }
 
 // Converts HTTP(S) base URL into a WebSocket sync base URL.
@@ -432,7 +456,7 @@ async function onWebSocketMessage(rawMessage) {
 		return;
 	}
 
-	await applyRemoteState(message.payload);
+	await enqueueRemoteApply(message.payload);
 	hasInitialRemoteState = true;
 	state.lastSyncAt = now();
 	await persistState();
@@ -471,7 +495,6 @@ function ensureWebSocketConnection() {
 
 	websocket.onopen = () => {
 		reconnectAttempt = 0;
-		websocket.send(JSON.stringify({ type: "pull", sourceDeviceId: state.deviceId }));
 	};
 
 	websocket.onmessage = (event) => {
@@ -521,7 +544,7 @@ async function performSync(reason = "unknown") {
 	isSyncing = true;
 	try {
 		const remotePayload = await fetchRemotePayload();
-		await applyRemoteState(remotePayload);
+		await enqueueRemoteApply(remotePayload);
 		hasInitialRemoteState = true;
 
 		const latestPayload = await captureLocalPayload();

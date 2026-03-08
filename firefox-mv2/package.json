@@ -1,0 +1,19 @@
+{
+  "name": "styx-firefox-mv2",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "debug": "web-ext run --source-dir=src --firefox=deved --devtools & web-ext run --source-dir=src --firefox=deved --devtools",
+    "build": "web-ext build --source-dir=src --artifacts-dir=dist --overwrite-dest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yznts/styx/firefox-mv2"
+  },
+  "author": "Yurii Zinets",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "web-ext": "^9.3.0"
+  }
+}

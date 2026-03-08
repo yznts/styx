@@ -1,0 +1,19 @@
+{
+  "name": "styx-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "server": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yznts/styx/server"
+  },
+  "author": "Yurii Zinets",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1",
+    "ws": "^8.19.0"
+  }
+}

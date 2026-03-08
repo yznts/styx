@@ -30,12 +30,15 @@ app.use((request, response, next) => {
 });
 
 // Normalizes incoming sync payload structure.
+// Preserves the meta field (e.g. lastChangedAt) used by clients for conflict resolution.
 function normalizePayload(input) {
 	const tabs = Array.isArray(input?.tabs) ? input.tabs : [];
+	const meta = input?.meta && typeof input.meta === "object" ? input.meta : {};
 	return {
 		version: Number(input?.version || 1),
 		updatedAt: Number(input?.updatedAt || Date.now()),
 		tabs,
+		meta,
 	};
 }
 
@@ -84,6 +87,7 @@ app.get("/sync/:id", (request, response) => {
 		version: 1,
 		updatedAt: 0,
 		tabs: [],
+		meta: {},
 	};
 
 	response.status(200).json(payload);
@@ -93,6 +97,18 @@ app.get("/sync/:id", (request, response) => {
 app.post("/sync/:id", (request, response) => {
 	const identifier = request.params.id;
 	const payload = normalizePayload(request.body || {});
+	const current = store.get(identifier);
+	const incomingAt = Number(payload.meta?.lastChangedAt || 0);
+	const currentAt = Number(current?.meta?.lastChangedAt || 0);
+	if (incomingAt <= currentAt) {
+		return response.status(200).json({
+			ok: true,
+			identifier,
+			skipped: true,
+			storedTabs: current.tabs.length,
+			updatedAt: current.updatedAt,
+		});
+	}
 	payload.updatedAt = Date.now();
 	store.set(identifier, payload);
 
@@ -158,6 +174,7 @@ websocketServer.on("connection", (socket) => {
 		version: 1,
 		updatedAt: 0,
 		tabs: [],
+		meta: {},
 	};
 
 	socket.send(JSON.stringify({
@@ -178,6 +195,7 @@ websocketServer.on("connection", (socket) => {
 					version: 1,
 					updatedAt: 0,
 					tabs: [],
+					meta: {},
 				};
 				socket.send(JSON.stringify({
 					type: "snapshot",
@@ -192,15 +210,20 @@ websocketServer.on("connection", (socket) => {
 			}
 
 			const payload = normalizePayload(message.payload || {});
-			payload.updatedAt = Date.now();
-			store.set(identifier, payload);
+			const current = store.get(identifier);
+			const incomingAt = Number(payload.meta?.lastChangedAt || 0);
+			const currentAt = Number(current?.meta?.lastChangedAt || 0);
+			if (incomingAt >= currentAt) {
+				payload.updatedAt = Date.now();
+				store.set(identifier, payload);
 
-			broadcast(identifier, {
-				type: "sync",
-				identifier,
-				payload,
-				sourceDeviceId: typeof message.sourceDeviceId === "string" ? message.sourceDeviceId : "",
-			}, socket);
+				broadcast(identifier, {
+					type: "sync",
+					identifier,
+					payload,
+					sourceDeviceId: typeof message.sourceDeviceId === "string" ? message.sourceDeviceId : "",
+				}, socket);
+			}
 		} catch (_error) {
 			socket.send(JSON.stringify({ type: "error", message: "Invalid websocket payload" }));
 		}

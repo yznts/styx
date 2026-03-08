@@ -9,7 +9,7 @@
         <script src="lib/tailwindcss.js" defer></script>
     </head>
     <body class="min-w-sm max-w-sm">
-        <div class="p-4 flex flex-col gap-4">
+        <div class="p-4 flex flex-col gap-4 form">
             <div class="relative">
                 <input
                     id="identifier-input"
@@ -30,9 +30,9 @@
 
             <div class="flex flex-col gap-2">
                 <label class="text-sm">Sync method</label>
-                <select id="sync-method" class="input">
-                    <option value="browserSync">browser.storage.sync</option>
-                    <option value="server">Own server</option>
+                <select id="sync-method" class="input w-full">
+                    <option value="browser.storage.sync">Browser storage sync</option>
+                    <option value="server">Styx server</option>
                 </select>
             </div>
 
@@ -42,7 +42,7 @@
                     id="server-url-input"
                     type="text"
                     class="input"
-                    placeholder="https://sync.example.com"
+                    placeholder="https://styx.yznts.cc"
                 />
             </div>
 
@@ -50,8 +50,6 @@
                 <input id="server-ws-enabled" type="checkbox" />
                 <span class="text-sm">Enable WebSocket realtime sync</span>
             </label>
-
-            <button id="sync-now-button" class="btn btn-primary">Sync now</button>
 
             <div>
                 <span>Last updated:</span>

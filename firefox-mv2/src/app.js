@@ -5,16 +5,17 @@ const serverUrlInput = document.getElementById("server-url-input");
 const serverUrlGroup = document.getElementById("server-url-group");
 const serverWsEnabledInput = document.getElementById("server-ws-enabled");
 const serverWsToggleGroup = document.getElementById("server-ws-toggle-group");
-const syncNowButton = document.getElementById("sync-now-button");
 const lastUpdated = document.getElementById("last-updated");
 const statusMessage = document.getElementById("status-message");
 
 // Local cache of settings shown in the popup.
 let settingsCache = {
   identifier: "",
-  syncMethod: "browserSync",
-  serverBaseUrl: "http://127.0.0.1:8787",
-  serverUseWebSocket: false,
+  method: "server", // "server" or "browser.storage.sync"
+  server: {
+    url: "https://styx.yznts.cc",
+    websocket: true,
+  },
 };
 
 // Formats timestamps into short human-readable relative time text.
@@ -61,9 +62,11 @@ function setStatus(text) {
 function readUiSettings() {
   return {
     identifier: identifierInput.value.trim(),
-    syncMethod: syncMethodSelect.value,
-    serverBaseUrl: serverUrlInput.value.trim(),
-    serverUseWebSocket: Boolean(serverWsEnabledInput.checked),
+    method: syncMethodSelect.value === "server" ? "server" : "browser.storage.sync",
+    server: {
+      url: serverUrlInput.value.trim(),
+      websocket: Boolean(serverWsEnabledInput.checked),
+    },
   };
 }
 
@@ -89,9 +92,9 @@ async function loadSettings() {
   };
 
   identifierInput.value = settingsCache.identifier || "";
-  syncMethodSelect.value = settingsCache.syncMethod || "browserSync";
-  serverUrlInput.value = settingsCache.serverBaseUrl || "http://127.0.0.1:8787";
-  serverWsEnabledInput.checked = Boolean(settingsCache.serverUseWebSocket);
+  syncMethodSelect.value = settingsCache.method === "server" ? "server" : "browser.storage.sync";
+  serverUrlInput.value = settingsCache.server?.url || "https://styx.yznts.cc";
+  serverWsEnabledInput.checked = Boolean(settingsCache.server?.websocket);
   renderServerField();
 
   lastUpdated.textContent = formatRelativeTime(response ? response.lastSyncAt : 0);
@@ -123,23 +126,6 @@ serverUrlInput.addEventListener("change", async () => {
 serverWsEnabledInput.addEventListener("change", async () => {
   await saveSettings();
   setStatus("WebSocket mode saved.");
-});
-
-// Triggers an immediate manual sync from the popup.
-syncNowButton.addEventListener("click", async () => {
-  syncNowButton.disabled = true;
-  setStatus("Sync in progress...");
-
-  try {
-    await saveSettings();
-    const response = await browser.runtime.sendMessage({ type: "styx:sync-now" });
-    lastUpdated.textContent = formatRelativeTime(response ? response.lastSyncAt : 0);
-    setStatus("Sync completed.");
-  } catch (_error) {
-    setStatus("Sync failed. Check server URL or permissions.");
-  } finally {
-    syncNowButton.disabled = false;
-  }
 });
 
 // Periodically refreshes last-sync time displayed in the popup.

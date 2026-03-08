@@ -29,7 +29,7 @@ jobs:
       - name: Build Firefox extension
         run: |
           npx web-ext build \
-            --source-dir firefox-mv2 \
+            --source-dir firefox-mv2/src \
             --artifacts-dir web-ext-artifacts \
             --filename styx-firefox-mv2.zip
 

@@ -31,6 +31,7 @@ jobs:
         run: |
           cd firefox-mv2 && \
           npx web-ext build \
+            --source-dir src \
             --artifacts-dir artifacts \
             --filename styx-firefox-mv2.zip
 

@@ -1,4 +1,4 @@
-name: release-firefox-mv2
+name: Release Firefox Manifest V2 Extension
 
 on:
   release:
@@ -12,6 +12,9 @@ jobs:
   build-and-upload:
     name: Build and upload Firefox MV2 extension
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firefox-mv2
 
     steps:
       - name: Check out
